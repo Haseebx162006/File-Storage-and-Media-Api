@@ -1,6 +1,7 @@
 from pathlib import Path
 import hashlib
 import uuid
+import shutil
 from typing import List, Dict
 from datetime import datetime
 from Backend.Model.File import File
@@ -150,7 +151,16 @@ class StorageManager:
         "storage_limit": bucket.storage_limit,
         "within_quota": True
          }
-                            
+         
+    def file_migrate(self,old_path:str, new_path:str, new_filename:str )->str:
+        new_bucket_path=Path(new_path)
+        new_bucket_path.mkdir(parents=True, exist_ok=True)
+        
+        new_path_2= new_bucket_path/new_filename
+        shutil.move(old_path,new_path_2)
+        return str(new_path_2)
+        
+             
             
     
 
