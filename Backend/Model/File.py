@@ -1,0 +1,18 @@
+from Backend.database import Base
+from sqlalchemy import Column,Integer, String, DateTime, func,ForeignKey,Boolean
+from sqlalchemy.orm import relationship
+
+class File(Base):
+    
+    __tablename__="files"
+    id=Column(Integer,primary_key=True, index=True)
+    file_name=Column(String,nullable=False)
+    bucket_id=Column(Integer,ForeignKey("buckets.id"),nullable=False)
+    file_content_type=Column(String)
+    is_public=Column(Boolean,default=True)
+    is_deleted=Column(Boolean,default=False)
+    created_at=Column(DateTime(timezone=True), server_default=func.now())
+    
+    bucket=relationship("Bucket",back_populates="files")
+    
+    

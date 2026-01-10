@@ -9,7 +9,6 @@ class Create_User_Schema(BaseModel):
 class Read_User_Schema(BaseModel):
     id: int
     email:str
-    password:str
     name:str
     
     class Config:

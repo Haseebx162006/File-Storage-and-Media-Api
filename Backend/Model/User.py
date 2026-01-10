@@ -1,5 +1,6 @@
 from Backend.database import Base
 from sqlalchemy import Column,Integer, String, DateTime, func
+from sqlalchemy.orm import relationship
 class User(Base):
     
     __tablename__="users"
@@ -11,3 +12,5 @@ class User(Base):
     created_at=Column(DateTime(timezone=True),server_default=func.now())
     updated_at=Column(DateTime(timezone=True),server_default=func.now(),onupdate=func.now())
     
+    
+    buckets=relationship("Bucket",back_populates="owner")
