@@ -14,6 +14,7 @@ class Bucket_Response_schema(BaseModel):
     user_id:int
     is_public: bool
     storage_limit: Optional[int]
+    used_Storage:Optional[int]
     created_at: datetime
     updated_at: datetime
     

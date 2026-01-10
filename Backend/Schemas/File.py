@@ -13,6 +13,7 @@ class File_Response_Schema(BaseModel):
     file_name: str
     bucket_id: int
     file_content_type: Optional[str]
+    file_size= int
     is_public: bool
     is_deleted: bool
     created_at: datetime

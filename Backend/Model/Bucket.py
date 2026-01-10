@@ -11,6 +11,6 @@ class Bucket(Base):
     storage_limit=Column(BigInteger)
     created_at=Column(DateTime(timezone=True),server_default=func.now())
     updated_at=Column(DateTime(timezone=True),server_default=func.now())
-    
+    used_Storage=Column(BigInteger)
     owner=relationship("User", back_populates="buckets")
     files=relationship("File",back_populates="bucket")
