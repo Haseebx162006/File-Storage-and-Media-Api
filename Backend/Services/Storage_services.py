@@ -12,7 +12,7 @@ class StorageService:
         self.db = db
         self.storage_manager = storage_manager
 
-    def upload_file(self, user: User, bucket_id: int, file: File):
+    def upload_file(self, user: User, bucket_id: int, file: dict):
         """
         Handles uploading a file to a bucket:
         1. Check bucket exists
@@ -32,28 +32,25 @@ class StorageService:
 
         # Check storage quota
         try:
-            self.storage_manager.check_storage_quota(file=file, bucket=bucket, db=self.db)
+            self.storage_manager.check_storage_Quota(file=file, bucket=bucket, db=self.db)
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
         # Save file to disk
         metadata = self.storage_manager.save_file(
-            file_name=file.name,
-            content=file.content,
+            file_name=file["name"],
+            content=file["content"],
             bucket_id=bucket.id,
-            file_content_type=file.content_type
+            file_content_type=file["content_type"]
         )
 
         # Save metadata to DB
         new_file = File(
-            name=metadata["file_name"],
+            file_name=metadata["original_name"],
             file_size=metadata["file_size"],
             bucket_id=bucket.id,
-            md5_hash=metadata["md5_hash"],
-            sha256_hash=metadata["sha256_hash"],
-            file_path=metadata["file_path"],  # Ensure File model uses file_path
-            content_type=metadata["file_content_type"],
-            upload_date=metadata["upload_date"]
+            file_content_type=metadata["content_type"],
+            file_path=metadata["file_path"]
         )
         self.db.add(new_file)
         self.db.commit()
@@ -80,30 +77,38 @@ class StorageService:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="File not found on storage")
 
         return File_Response_Schema(
+            id=file.id,
+            file_name=file.file_name,
             path=file.file_path,
-            filename=file.name,
-            media_type=file.content_type,
-            id=file.id
+            filename=file.file_name,
+            media_type=file.file_content_type
         )
 
     def delete_file(self, user: User, file_id: int):
         file = self.db.query(File).filter(File.id == file_id).first()
         if not file:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found in database")
 
         bucket = self.db.query(Bucket).filter(Bucket.id == file.bucket_id).first()
         if bucket.user_id != user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot access this bucket")
 
+        # Check if file exists on disk
+        if not self.storage_manager.file_exists(file.file_path):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on storage disk. File path: " + file.file_path)
+
+        # Delete from disk
         success = self.storage_manager.delete_file(file_path=file.file_path)
         if not success:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="File could not be deleted from storage")
 
+        # Delete from database
         self.db.delete(file)
         self.db.commit()
 
         # Update bucket usage
-        bucket.used_Storage = max(bucket.used_Storage - file.file_size, 0)
+        if bucket.used_Storage:
+            bucket.used_Storage = max(bucket.used_Storage - file.file_size, 0)
         self.db.commit()
 
         return {"detail": "File deleted successfully"}
@@ -120,11 +125,10 @@ class StorageService:
         return [
             {
                 "id": f.id,
-                "name": f.name,
+                "name": f.file_name,
                 "size": f.file_size,
-                "upload_date": f.upload_date,
-                "content_type": f.content_type,
-                "md5_hash": f.md5_hash
+                "content_type": f.file_content_type,
+                "created_at": f.created_at.isoformat()
             }
             for f in files
         ]

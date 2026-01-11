@@ -10,13 +10,16 @@ class File_Create_Schema(BaseModel):
 
 class File_Response_Schema(BaseModel):
     id: int
-    file_name: Optional[str]
-    bucket_id: Optional[int]
-    file_content_type: Optional[str]
-    file_size= Optional[int]
-    is_public: Optional[bool]
-    is_deleted: Optional[bool]
-    created_at: Optional[datetime]
+    file_name: Optional[str] = None
+    bucket_id: Optional[int] = None
+    file_content_type: Optional[str] = None
+    file_size: Optional[int] = None
+    is_public: Optional[bool]=None
+    is_deleted: Optional[bool]=None
+    created_at: Optional[datetime]=None
+    path: Optional[str] = None
+    filename: Optional[str] = None
+    media_type: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        form_attributes = True

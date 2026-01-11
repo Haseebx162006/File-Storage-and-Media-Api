@@ -119,8 +119,8 @@ class StorageManager:
     def file_exists(self, file_path: str) -> bool:
         return Path(file_path).exists()
     
-    def get_current_used_storage(db, bucket_id: int) -> int:
-        total = db.query(func.sum(File.size))\
+    def get_current_used_storage(self, bucket_id: int, db: Session) -> int:
+        total = db.query(func.sum(File.file_size))\
               .filter(File.bucket_id == bucket_id)\
               .scalar()
               
@@ -130,23 +130,23 @@ class StorageManager:
             
 
     
-    def check_storage_Quota(self,file:File,bucket:Bucket,db:Session):
-         current_used = self.get_current_used_storage(db=db, bucket_id=bucket.id)
+    def check_storage_Quota(self, file: dict, bucket: Bucket, db: Session):
+         current_used = self.get_current_used_storage(bucket_id=bucket.id, db=db)
     
          # Calculate total after upload
-         total_after_upload = current_used + file.file_size
+         total_after_upload = current_used + file["file_size"]
     
          if total_after_upload > bucket.storage_limit:
              raise ValueError(f"Low storage: Bucket limit {bucket.storage_limit} bytes, "
                          f"currently used {current_used} bytes, "
-                         f"file size {file.file_size} bytes")
+                         f"file size {file['file_size']} bytes")
                 
     
     
          return {
         "bucket_id": bucket.id,
         "current_used": current_used,
-        "file_size": file.file_size,
+        "file_size": file["file_size"],
         "total_after_upload": total_after_upload,
         "storage_limit": bucket.storage_limit,
         "within_quota": True

@@ -21,3 +21,6 @@ class Bucket_Response_schema(BaseModel):
     class Config:
         orm_mode=True
         
+class Bucket_update_Schema(BaseModel):
+    name: Optional[str] = None
+    storage_limit: Optional[int] = None
