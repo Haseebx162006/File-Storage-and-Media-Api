@@ -1,4 +1,4 @@
-from Helpers.storage import StorageManager
+from Helpers.storage import get_storage_manager
 from api.database import get_db
 from model.User import User
 from model.File import File
@@ -8,9 +8,9 @@ from fastapi import HTTPException, status
 from schemas.File import File_Response_Schema
 
 class StorageService:
-    def __init__(self, storage_manager: StorageManager, db: Session):
+    def __init__(self, db: Session):
         self.db = db
-        self.storage_manager = storage_manager
+        self.storage_manager = get_storage_manager()
 
     def upload_file(self, user: User, bucket_id: int, file: dict):
         """

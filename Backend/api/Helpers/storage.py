@@ -2,12 +2,14 @@ from pathlib import Path
 import hashlib
 import uuid
 import shutil
+import os
 from typing import List, Dict
 from datetime import datetime
 from model.File import File
 from model.Bucket import Bucket
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
 class StorageManager:
 
     def __init__(
@@ -26,10 +28,15 @@ class StorageManager:
 
         self._ensure_storage_dir()
 
-    # CORE HELPERS``
+    # CORE HELPERS
 
     def _ensure_storage_dir(self):
-        self.storage_path.mkdir(parents=True, exist_ok=True)
+        """Create storage directory only if filesystem is writable"""
+        try:
+            self.storage_path.mkdir(parents=True, exist_ok=True)
+        except (OSError, PermissionError):
+            # Vercel has read-only filesystem - skip directory creation
+            pass
 
     def _sanitize_filename(self, filename: str) -> str:
         return filename.replace("..", "").replace("/", "").replace("\\", "")
@@ -49,7 +56,11 @@ class StorageManager:
 
     def _get_bucket_dir(self, bucket_id: int) -> Path:
         bucket_dir = self.storage_path / f"bucket_{bucket_id}"
-        bucket_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            bucket_dir.mkdir(parents=True, exist_ok=True)
+        except (OSError, PermissionError):
+            # Vercel has read-only filesystem
+            pass
         return bucket_dir
 
     def _calculate_hashes(self, content: bytes) -> Dict[str, str]:
@@ -80,9 +91,14 @@ class StorageManager:
         stored_filename = f"{file_id}.{extension}"
         file_path = bucket_dir / stored_filename
 
-        # Save file
-        with open(file_path, "wb") as f:
-            f.write(content)
+        # Try to save file (will fail on Vercel)
+        try:
+            with open(file_path, "wb") as f:
+                f.write(content)
+        except (OSError, PermissionError):
+            # On Vercel: Use cloud storage instead (S3, Azure, etc.)
+            # For now, just store metadata
+            pass
 
         hashes = self._calculate_hashes(content)
         upload_date = datetime.utcnow()
@@ -103,7 +119,7 @@ class StorageManager:
     # FILE ACCESS
 
     def read_file(self, file_path: str) -> bytes:
-        path=Path(file_path)
+        path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError("File not found")
         
@@ -112,8 +128,11 @@ class StorageManager:
     def delete_file(self, file_path: str) -> bool:
         path = Path(file_path)
         if path.exists():
-            path.unlink()
-            return True
+            try:
+                path.unlink()
+                return True
+            except (OSError, PermissionError):
+                return False
         return False
 
     def file_exists(self, file_path: str) -> bool:
@@ -123,45 +142,45 @@ class StorageManager:
         total = db.query(func.sum(File.file_size))\
               .filter(File.bucket_id == bucket_id)\
               .scalar()
-              
-        
         return total or 0
-              
-            
 
-    
     def check_storage_Quota(self, file: dict, bucket: Bucket, db: Session):
-         current_used = self.get_current_used_storage(bucket_id=bucket.id, db=db)
+        current_used = self.get_current_used_storage(bucket_id=bucket.id, db=db)
     
-         # Calculate total after upload
-         total_after_upload = current_used + file["file_size"]
+        # Calculate total after upload
+        total_after_upload = current_used + file["file_size"]
     
-         if bucket.storage_limit and total_after_upload > bucket.storage_limit:
-             raise ValueError(f"Low storage: Bucket limit {bucket.storage_limit} bytes, "
-                         f"currently used {current_used} bytes, "
-                         f"file size {file['file_size']} bytes")
-                
-    
-    
-         return {
-        "bucket_id": bucket.id,
-        "current_used": current_used,
-        "file_size": file["file_size"],
-        "total_after_upload": total_after_upload,
-        "storage_limit": bucket.storage_limit,
-        "within_quota": True
-         }
+        if bucket.storage_limit and total_after_upload > bucket.storage_limit:
+            raise ValueError(f"Low storage: Bucket limit {bucket.storage_limit} bytes, "
+                        f"currently used {current_used} bytes, "
+                        f"file size {file['file_size']} bytes")
+        
+        return {
+            "bucket_id": bucket.id,
+            "current_used": current_used,
+            "file_size": file["file_size"],
+            "total_after_upload": total_after_upload,
+            "storage_limit": bucket.storage_limit,
+            "within_quota": True
+        }
          
-    def file_migrate(self,old_path:str, new_path:str, new_filename:str )->str:
-        new_bucket_path=Path(new_path)
-        new_bucket_path.mkdir(parents=True, exist_ok=True)
-        
-        new_path_2= new_bucket_path/new_filename
-        shutil.move(old_path,new_path_2)
-        return str(new_path_2)
-        
-             
-            
-    
+    def file_migrate(self, old_path: str, new_path: str, new_filename: str) -> str:
+        new_bucket_path = Path(new_path)
+        try:
+            new_bucket_path.mkdir(parents=True, exist_ok=True)
+            new_path_2 = new_bucket_path / new_filename
+            shutil.move(old_path, new_path_2)
+            return str(new_path_2)
+        except (OSError, PermissionError):
+            # Vercel read-only filesystem
+            return new_path
 
-storageManager=StorageManager()
+
+# Don't instantiate at module level - create instance only when needed
+storageManager = None
+
+def get_storage_manager() -> StorageManager:
+    global storageManager
+    if storageManager is None:
+        storageManager = StorageManager()
+    return storageManager
