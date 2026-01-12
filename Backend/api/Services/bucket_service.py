@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from Backend.Model.Bucket import Bucket
-from Backend.Model.File import File
-from Backend.Model.User import User
+from model.Bucket import Bucket
+from model.File import File
+from model.User import User
 
 class BucketService:
 

@@ -1,11 +1,11 @@
 from fastapi import UploadFile , Depends
 from sqlalchemy.orm import Session
-from Backend.Helpers.storage import StorageManager
-from Backend.Model.User import User
-from Backend.Model.Bucket import Bucket
-from Backend.Model.File import File
-from Backend.database import get_db
-from Backend.Services.Storage_services import StorageService
+from Helpers.storage import StorageManager
+from model.User import User
+from model.Bucket import Bucket
+from model.File import File
+from api.database import get_db
+from Services.Storage_services import StorageService
 
 
 

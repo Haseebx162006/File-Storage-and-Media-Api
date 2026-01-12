@@ -1,9 +1,9 @@
 
 from sqlalchemy.orm import Session
-from Backend.Model.User import User
+from model.User import User
 from fastapi import HTTPException,status
-from Backend.Schemas.User import Create_User_Schema, Read_User_Schema, Update_User_Schama
-from Backend.Auth.Security import hash_password
+from schemas.User import Create_User_Schema, Read_User_Schema, Update_User_Schama
+from Auth.Security import hash_password
 
 def search_with_email(email:str,db:Session):
     return db.query(User).filter(User.email==email).first()

@@ -1,11 +1,11 @@
-from Backend.Helpers.storage import StorageManager
-from Backend.database import get_db
-from Backend.Model.User import User
-from Backend.Model.File import File
-from Backend.Model.Bucket import Bucket
+from Helpers.storage import StorageManager
+from api.database import get_db
+from model.User import User
+from model.File import File
+from model.Bucket import Bucket
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from Backend.Schemas.File import File_Response_Schema
+from schemas.File import File_Response_Schema
 
 class StorageService:
     def __init__(self, storage_manager: StorageManager, db: Session):

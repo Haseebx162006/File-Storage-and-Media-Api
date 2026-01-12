@@ -1,10 +1,11 @@
+
 from fastapi import APIRouter, UploadFile, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from Backend.Model.User import User
-from Backend.database import get_db
-from Backend.Auth.token import get_current_user
-from Backend.Services.File_Services import (
+from model.User import User
+from database import get_db
+from Auth.token import get_current_user
+from Services.File_Services import (
     upload_file_Service,
     delete_file_service,
     download_file_service,

@@ -1,4 +1,4 @@
-from Backend.database import Base
+from api.database import Base
 from sqlalchemy import Column,Integer, String, DateTime, func, ForeignKey,Boolean,BigInteger
 from sqlalchemy.orm import relationship
 class Bucket(Base):

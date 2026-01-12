@@ -2,25 +2,25 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt, JWTError
-from Backend.Auth.Security import hash_password
+from Auth.Security import hash_password
 from pydantic import BaseModel
 
-from Backend.database import get_db
-from Backend.Auth.Crud import create_user, search_with_email
-from Backend.Schemas.User import (
+from api.database import get_db
+from Auth.Crud import create_user, search_with_email
+from schemas.User import (
     Create_User_Schema,
     TokenResponse
 )
-from Backend.Auth.Security import verify_password
-from Backend.Auth.token import create_token
-from Backend.Auth.config import settings
+from Auth.Security import verify_password
+from Auth.token import create_token
+from Auth.config import settings
 
 class LoginSchema(BaseModel):
     username: str
     password: str
-from Backend.Auth.Security import verify_password
-from Backend.Auth.token import create_token
-from Backend.Auth.config import settings
+from Auth.Security import verify_password
+from Auth.token import create_token
+from Auth.config import settings
 
 auth_endpoints = APIRouter(prefix="/api/auth", tags=["Authentication"])
 

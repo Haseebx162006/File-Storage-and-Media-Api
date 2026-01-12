@@ -4,8 +4,8 @@ import uuid
 import shutil
 from typing import List, Dict
 from datetime import datetime
-from Backend.Model.File import File
-from Backend.Model.Bucket import Bucket
+from model.File import File
+from model.Bucket import Bucket
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 class StorageManager:

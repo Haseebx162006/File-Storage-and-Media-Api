@@ -1,11 +1,11 @@
 from fastapi import APIRouter,HTTPException,status
-from Backend.Schemas.Bucket import Bucket_create_Schema, Bucket_Response_schema, Bucket_update_Schema
+from schemas.Bucket import Bucket_create_Schema, Bucket_Response_schema, Bucket_update_Schema
 from sqlalchemy.orm import Session
 from fastapi import Depends
-from Backend.database import get_db
-from Backend.Auth.token import get_current_user
-from Backend.Model.User import User
-from Backend.Services.bucket_service import BucketService
+from database import get_db
+from Auth.token import get_current_user
+from model.User import User
+from Services.bucket_service import BucketService
 bucket_router=APIRouter(
     prefix="/api/buckets"
 )
@@ -75,5 +75,3 @@ def update_bucket(
         bucket_id=bucket_id,
         data=data
     )
-
-
