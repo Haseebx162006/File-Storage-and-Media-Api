@@ -136,7 +136,7 @@ class StorageManager:
          # Calculate total after upload
          total_after_upload = current_used + file["file_size"]
     
-         if total_after_upload > bucket.storage_limit:
+         if bucket.storage_limit and total_after_upload > bucket.storage_limit:
              raise ValueError(f"Low storage: Bucket limit {bucket.storage_limit} bytes, "
                          f"currently used {current_used} bytes, "
                          f"file size {file['file_size']} bytes")

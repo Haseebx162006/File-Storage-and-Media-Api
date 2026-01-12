@@ -125,8 +125,8 @@ class StorageService:
         return [
             {
                 "id": f.id,
-                "name": f.file_name,
-                "size": f.file_size,
+                "file_name": f.file_name,
+                "file_size": f.file_size,
                 "content_type": f.file_content_type,
                 "created_at": f.created_at.isoformat()
             }
@@ -150,15 +150,15 @@ class StorageService:
             raise HTTPException(status_code=403, detail="You do not own one of the buckets")
 
         # Check target quota
-        if target_bucket.used_Storage + file.file_size > target_bucket.storage_limit:
+        if target_bucket.storage_limit and target_bucket.used_Storage + file.file_size > target_bucket.storage_limit:
             raise HTTPException(status_code=400, detail="Not enough space in target bucket")
 
         # Move file on disk
         new_bucket_path = self.storage_manager.storage_path / f"bucket_{target_bucket.id}"
         new_file_path = self.storage_manager.file_migrate(
             old_path=file.file_path,
-            new_bucket_path=new_bucket_path,
-            new_filename=file.name
+            new_path=str(new_bucket_path),
+            new_filename=file.file_name
         )
 
         # Update DB
@@ -171,4 +171,4 @@ class StorageService:
         target_bucket.used_Storage += file.file_size
         self.db.commit()
 
-        return {"detail": f"File '{file.name}' moved to bucket {target_bucket.id}"}
+        return {"detail": f"File '{file.file_name}' moved to bucket {target_bucket.id}"}

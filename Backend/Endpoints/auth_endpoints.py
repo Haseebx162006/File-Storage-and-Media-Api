@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from Backend.Auth.Security import hash_password
+from pydantic import BaseModel
 
 from Backend.database import get_db
 from Backend.Auth.Crud import create_user, search_with_email
@@ -10,6 +11,13 @@ from Backend.Schemas.User import (
     Create_User_Schema,
     TokenResponse
 )
+from Backend.Auth.Security import verify_password
+from Backend.Auth.token import create_token
+from Backend.Auth.config import settings
+
+class LoginSchema(BaseModel):
+    username: str
+    password: str
 from Backend.Auth.Security import verify_password
 from Backend.Auth.token import create_token
 from Backend.Auth.config import settings
@@ -28,10 +36,9 @@ def signup(user: Create_User_Schema, db: Session = Depends(get_db)):
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered"
         )
-    hashed_password_1 =hash_password(user.password)
     new_user = create_user(
         email=user.email,
-        password=hashed_password_1,
+        password=user.password,
         name=user.name,
         db=db
     )
@@ -47,12 +54,12 @@ def signup(user: Create_User_Schema, db: Session = Depends(get_db)):
 # =========================
 @auth_endpoints.post("/login", response_model=TokenResponse)
 def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    credentials: LoginSchema,
     db: Session = Depends(get_db)
 ):
-    user = search_with_email(form_data.username, db)
+    user = search_with_email(credentials.username, db)
 
-    if not user or not verify_password(form_data.password, user.password):
+    if not user or not verify_password(credentials.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"

@@ -11,7 +11,7 @@ class BucketService:
 
     #  Creating bucket
     def create_bucket(self, user: User, name: str, storage_limit: int):
-        if storage_limit <= 0:
+        if storage_limit and storage_limit <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Storage limit must be greater than 0"
