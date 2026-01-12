@@ -1,0 +1,174 @@
+# File Storage Location & Directory Structure
+
+## Default Storage Location
+
+```
+/your_project_root/
+├── storage/                          # Main storage directory
+│   ├── user_123/                     # Organized by User ID
+│   │   ├── 2024-01/                  # Organized by Year-Month
+│   │   │   ├── 550e8400-e29b_document.pdf
+│   │   │   ├── 550e8400-e29c_image.jpg
+│   │   │   └── 550e8400-e29d_video.mp4
+│   │   ├── 2024-02/
+│   │   │   └── 550e8400-e29e_report.xlsx
+│   │   └── 2024-03/
+│   │
+│   ├── user_456/
+│   │   ├── 2024-01/
+│   │   │   └── 660f9511-f41c_data.csv
+│   │   └── 2024-02/
+│   │
+│   └── user_789/
+│       └── 2024-01/
+│           └── 770g0622-g52d_notes.txt
+│
+├── app/
+├── tests/
+├── main.py
+└── requirements.txt
+```
+
+## How Files Are Saved
+
+### 1. **Base Storage Path**
+```python
+# In your main.py or config
+storage_path = "./storage"
+# or absolute path
+storage_path = "/var/app/storage"
+```
+
+### 2. **File Organization Structure**
+```
+Base Path → User ID → Year-Month → Unique Filename
+```
+
+**Example:**
+```
+./storage/user_123/2024-01/550e8400-e29b_document.pdf
+         └─────────────────────────────────────────
+                        File Path
+```
+
+### 3. **Unique Filename Generation**
+Files are renamed with UUID prefix to avoid conflicts:
+
+```
+Original: my_document.pdf
+Saved as: 550e8400-e29b-41d3-a4c9-6b2d3c7f9e1a_my_document.pdf
+          └─────────────────────────────────────────┘ └──────────┘
+                        UUID                      Original name
+```
+
+## Configuration Options
+
+### Option 1: Local Filesystem (Development)
+```python
+# storage.py initialization
+storage_manager = StorageManager(
+    storage_path="./storage",
+    max_file_size=100 * 1024 * 1024  # 100MB
+)
+```
+
+**Saved at:** `./storage/` in your project
+
+---
+
+### Option 2: Absolute Path (Production)
+```python
+# storage.py initialization
+storage_manager = StorageManager(
+    storage_path="/var/app/storage",  # Linux
+    # or
+    # storage_path="C:\\app\\storage"  # Windows
+    max_file_size=100 * 1024 * 1024
+)
+```
+
+**Saved at:** `/var/app/storage/` on server
+
+---
+
+### Option 3: Cloud Storage Path (AWS/Azure)
+```python
+storage_manager = StorageManager(
+    storage_path="/mnt/shared_storage",  # Mounted cloud storage
+    max_file_size=100 * 1024 * 1024
+)
+```
+
+**Saved at:** Mounted network drive
+
+---
+
+## Example File Path Generation
+
+When user uploads a file:
+
+```python
+# upload request
+user_id = "user_123"
+filename = "resume.pdf"
+upload_date = "2024-01-15"
+
+# Generated path
+# ./storage/user_123/2024-01/550e8400-e29b_resume.pdf
+```
+
+---
+
+## Storage Structure Benefits
+
+| Aspect | Benefit |
+|--------|---------|
+| **User Folders** | Easy to find files by user, delete user data |
+| **Date Folders** | Easy file organization, archiving old files |
+| **UUID Prefix** | No filename conflicts, unique identification |
+| **Flat Structure** | Fast file retrieval, no deep nesting |
+
+---
+
+## Accessing Saved Files
+
+```python
+# Reading file
+file_path = "./storage/user_123/2024-01/550e8400-e29b_resume.pdf"
+file_content = storage_manager.read_file(file_path)
+
+# Deleting file
+storage_manager.delete_file(file_path)
+
+# Getting file info
+info = storage_manager.get_file_info(file_path)
+# Returns: {size, created_date, modified_date, etc}
+```
+
+---
+
+## Important Security Considerations
+
+1. **Never store in web-accessible directory** (not in `static/` or `public/`)
+2. **Use full paths to prevent directory traversal**
+3. **Validate all paths before access**
+4. **Set proper file permissions** (chmod 644 for files, 755 for directories)
+5. **Regular backups** of storage directory
+
+---
+
+## Environment Variables (Best Practice)
+
+```python
+# config.py or .env
+STORAGE_PATH = os.getenv("STORAGE_PATH", "./storage")
+MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", 100 * 1024 * 1024))
+
+# main.py
+storage_manager = StorageManager(
+    storage_path=STORAGE_PATH,
+    max_file_size=MAX_FILE_SIZE
+)
+```
+
+This makes it easy to change paths in different environments (dev/staging/production).
