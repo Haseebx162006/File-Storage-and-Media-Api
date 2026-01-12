@@ -16,12 +16,12 @@ from database import Base, engine
 # Initialize FastAPI app
 app = FastAPI(title="File Storage API")
 
-# CORS configuration - Allow all origins for testing
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,  # Changed to False when using wildcard
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
 
