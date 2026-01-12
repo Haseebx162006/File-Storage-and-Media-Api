@@ -1,9 +1,6 @@
 from fastapi import UploadFile, Depends
 from sqlalchemy.orm import Session
-from Helpers.storage import get_storage_manager
 from model.User import User
-from model.Bucket import Bucket
-from model.File import File
 from api.database import get_db
 from Services.File_Services import StorageService
 
