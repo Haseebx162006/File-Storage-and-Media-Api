@@ -1,7 +1,9 @@
 import axios from 'axios';
+    
+const API_URL = "https://file-storage-system-sandy.vercel.app";
 
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api', // Adjustable base URL
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -25,18 +27,18 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // specific check for 401 and that we haven't retried yet
+        // Specific check for 401 and that we haven't retried yet
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             const refreshToken = localStorage.getItem('refresh_token');
 
             if (refreshToken) {
                 try {
-                    // Call refresh endpoint
-                    // Note: The backend endpoint is /auth/refresh, which accepts { "refresh_token": "..." }
-                    const response = await axios.post('http://localhost:8000/api/auth/refresh', {
-                        refresh_token: refreshToken,
-                    });
+                    // Call refresh endpoint with production URL
+                    const response = await axios.post(
+                        `${API_URL}/api/auth/refresh`,
+                        { refresh_token: refreshToken }
+                    );
 
                     const { access_token, refresh_token: newRefreshToken } = response.data;
 
