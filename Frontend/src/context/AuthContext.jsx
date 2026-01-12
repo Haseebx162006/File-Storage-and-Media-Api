@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const response = await api.post('/auth/login', { username: email, password });
+        const response = await api.post('/api/auth/login', { username: email, password });
         const { access_token, refresh_token } = response.data;
 
         localStorage.setItem('access_token', access_token);
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const signup = async (name, email, password) => {
-        const response = await api.post('/auth/signup', { name, email, password });
+        const response = await api.post('/api/auth/signup', { name, email, password });
         return response.data;
     };
 
