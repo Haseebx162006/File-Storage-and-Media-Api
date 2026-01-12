@@ -16,15 +16,16 @@ from database import Base, engine
 # Initialize FastAPI app
 app = FastAPI(title="File Storage API")
 
-# CORS configuration
+# CORS configuration - Allow your frontend
 origins = [
-    "https://file-storage-and-media-api.vercel.app/",
+    "https://file-storage-and-media-api.vercel.app",
     "http://localhost:3000",
+    "http://localhost:5173",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
