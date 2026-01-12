@@ -59,6 +59,8 @@ ENV/
 env/
 .venv/
 
+storage/
+
 # VSCode settings
 .vscode/
 
