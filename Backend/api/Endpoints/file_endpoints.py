@@ -1,19 +1,16 @@
 
-from fastapi import APIRouter, UploadFile, Depends, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from model.User import User
+from model.Bucket import Bucket
 from database import get_db
 from Auth.token import get_current_user
-from Services.File_Services import (
-    upload_file_Service,
-    delete_file_service,
-    download_file_service,
-    move_file_service,
-    list_files_service
-)
+import traceback
 
 file_router = APIRouter(prefix="/api")
+
+MAX_FILE_SIZE = 4 * 1024 * 1024  # 4MB for Vercel serverless
 
 # ----------------------------
 # Upload file to a bucket
@@ -21,11 +18,54 @@ file_router = APIRouter(prefix="/api")
 @file_router.post("/buckets/{bucket_id}/files", status_code=status.HTTP_201_CREATED)
 async def upload_file(
     bucket_id: int,
-    file: UploadFile,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
 ):
-    return upload_file_Service(user=user, bucket_id=bucket_id, file=file, db=db)
+    try:
+        # Validate bucket exists
+        bucket = db.query(Bucket).filter(Bucket.id == bucket_id).first()
+        if not bucket:
+            raise HTTPException(status_code=404, detail=f"Bucket {bucket_id} not found")
+        
+        # Check ownership
+        if bucket.user_id != user.id:
+            raise HTTPException(status_code=403, detail="Access denied to this bucket")
+        
+        # Read file content
+        content = await file.read()
+        
+        # Validate size
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail=f"File too large. Max size: 4MB")
+        
+        # Save using storage service
+        from Services.Storage_services import StorageService
+        storage = StorageService(db=db)
+        
+        file_data = {
+            "name": file.filename,
+            "content": content,
+            "content_type": file.content_type,
+            "file_size": len(content)
+        }
+        
+        result = storage.upload_file(user=user, bucket_id=bucket_id, file=file_data)
+        
+        return {
+            "id": result.id,
+            "file_name": result.file_name,
+            "file_size": result.file_size,
+            "bucket_id": result.bucket_id,
+            "created_at": result.created_at.isoformat() if result.created_at else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR uploading file: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
 # ----------------------------
@@ -35,6 +75,7 @@ async def upload_file(
 def list_files(bucket_id: int,
                user: User = Depends(get_current_user),
                db: Session = Depends(get_db)):
+    from Services.File_Services import list_files_service
     return list_files_service(user=user, bucket_id=bucket_id, db=db)
 
 
@@ -45,6 +86,7 @@ def list_files(bucket_id: int,
 def download_file(file_id: int,
                   user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
+    from Services.File_Services import download_file_service
     result = download_file_service(user=user, file_id=file_id, db=db)
     
     # The service should return a dict with path and filename
@@ -58,6 +100,7 @@ def download_file(file_id: int,
 def delete_file(file_id: int,
                 user: User = Depends(get_current_user),
                 db: Session = Depends(get_db)):
+    from Services.File_Services import delete_file_service
     delete_file_service(user=user, file_id=file_id, db=db)
     return {"detail": "File deleted successfully"}
 
@@ -69,4 +112,5 @@ def delete_file(file_id: int,
 def move_file(file_id: int, target_bucket_id: int,
               user: User = Depends(get_current_user),
               db: Session = Depends(get_db)):
+    from Services.File_Services import move_file_service
     return move_file_service(user=user, file_id=file_id, target_bucket_id=target_bucket_id, db=db)
