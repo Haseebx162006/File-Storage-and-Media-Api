@@ -20,11 +20,10 @@ app = FastAPI(title="File Storage API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,  # Changed to False when using wildcard
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_credentials=False,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # Include routers
 app.include_router(auth_endpoints)
 app.include_router(bucket_router)
