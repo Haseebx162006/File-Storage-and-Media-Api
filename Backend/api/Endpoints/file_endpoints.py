@@ -1,12 +1,13 @@
-
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from model.User import User
 from model.Bucket import Bucket
+from model.File import File as FileModel
 from database import get_db
 from Auth.token import get_current_user
 import traceback
+import io
 
 file_router = APIRouter(prefix="/api")
 
@@ -86,11 +87,27 @@ def list_files(bucket_id: int,
 def download_file(file_id: int,
                   user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
-    from Services.File_Services import download_file_service
-    result = download_file_service(user=user, file_id=file_id, db=db)
+    # Get file from database
+    file = db.query(FileModel).filter(FileModel.id == file_id).first()
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
     
-    # The service should return a dict with path and filename
-    return FileResponse(path=result.path, filename=result.filename, media_type=result.media_type)
+    # Check bucket ownership
+    bucket = db.query(Bucket).filter(Bucket.id == file.bucket_id).first()
+    if bucket.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Read file from Vercel Blob
+    from Helpers.cloud_storage import get_cloud_storage_manager
+    storage = get_cloud_storage_manager()
+    content = storage.read_file(file.file_path)
+    
+    # Stream the file
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type=file.file_content_type,
+        headers={"Content-Disposition": f"attachment; filename={file.file_name}"}
+    )
 
 
 # ----------------------------
