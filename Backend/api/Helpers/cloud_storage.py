@@ -41,16 +41,18 @@ class CloudStorageManager:
             # Upload to Vercel Blob
             from vercel_blob import put
             
+            # Correct API: put(path, file_content, options={})
             result = put(
-                pathname=blob_path,
-                body=content,
-                options={
+                blob_path,
+                content,
+                {
                     "access": "public",
-                    "content_type": file_content_type
+                    "contentType": file_content_type,
+                    "addRandomSuffix": False
                 }
             )
             
-            file_url = result.url
+            file_url = result['url']
             file_path = blob_path
         else:
             # Save locally for development
@@ -150,7 +152,7 @@ class CloudStorageManager:
             content = self.read_file(old_path)
             
             # Upload to new location
-            result = put(pathname=new_path, body=content)
+            result = put(new_path, content, {"access": "public", "addRandomSuffix": False})
             
             # Delete old file
             delete(old_path)
