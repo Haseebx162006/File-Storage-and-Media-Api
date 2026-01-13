@@ -13,7 +13,8 @@ class File(Base):
     is_public=Column(Boolean,default=True)
     is_deleted=Column(Boolean,default=False)
     created_at=Column(DateTime(timezone=True), server_default=func.now())
-    file_path = Column(String, nullable=False)   
+    file_path = Column(String, nullable=False)
+    file_url = Column(String, nullable=True)  # Cloud storage URL
     
     bucket=relationship("Bucket",back_populates="files")
     

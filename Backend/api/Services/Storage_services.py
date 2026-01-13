@@ -1,4 +1,4 @@
-from Helpers.storage import get_storage_manager
+from Helpers.cloud_storage import get_cloud_storage_manager
 from api.database import get_db
 from model.User import User
 from model.File import File
@@ -10,7 +10,7 @@ from schemas.File import File_Response_Schema
 class StorageService:
     def __init__(self, db: Session):
         self.db = db
-        self.storage_manager = get_storage_manager()
+        self.storage_manager = get_cloud_storage_manager()
 
     def upload_file(self, user: User, bucket_id: int, file: dict):
         """
@@ -50,7 +50,8 @@ class StorageService:
             file_size=metadata["file_size"],
             bucket_id=bucket.id,
             file_content_type=metadata["content_type"],
-            file_path=metadata["file_path"]
+            file_path=metadata["file_path"],
+            file_url=metadata.get("file_url")  # Add cloud storage URL
         )
         self.db.add(new_file)
         self.db.commit()
@@ -153,12 +154,11 @@ class StorageService:
         if target_bucket.storage_limit and target_bucket.used_Storage + file.file_size > target_bucket.storage_limit:
             raise HTTPException(status_code=400, detail="Not enough space in target bucket")
 
-        # Move file on disk
-        new_bucket_path = self.storage_manager.storage_path / f"bucket_{target_bucket.id}"
-        new_file_path = self.storage_manager.file_migrate(
+        # Move file on disk/cloud
+        new_file_path = self.storage_manager.move_file(
             old_path=file.file_path,
-            new_path=str(new_bucket_path),
-            new_filename=file.file_name
+            new_bucket_id=target_bucket.id,
+            filename=file.file_name
         )
 
         # Update DB
