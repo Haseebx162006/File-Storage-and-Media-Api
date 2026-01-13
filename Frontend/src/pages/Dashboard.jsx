@@ -49,7 +49,6 @@ const Dashboard = () => {
         return (
             <div className="flex h-[50vh] items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900" />
             </div>
         );
     }

@@ -88,31 +88,50 @@ class StorageService:
         )
 
     def delete_file(self, user: User, file_id: int):
+        print(f"[DELETE_FILE] Attempting to delete file ID: {file_id}")
         file = self.db.query(File).filter(File.id == file_id).first()
         if not file:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found in database")
+            print(f"[DELETE_FILE] ERROR: File ID {file_id} not found in database")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"File with ID {file_id} not found in database")
 
+        print(f"[DELETE_FILE] File found: {file.file_name}, path: {file.file_path}, bucket_id: {file.bucket_id}")
         bucket = self.db.query(Bucket).filter(Bucket.id == file.bucket_id).first()
         if bucket.user_id != user.id:
+            print(f"[DELETE_FILE] ERROR: User {user.id} doesn't own bucket {bucket.id}")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot access this bucket")
 
         # Check if file exists on disk
-        if not self.storage_manager.file_exists(file.file_path):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on storage disk. File path: " + file.file_path)
+        file_exists = self.storage_manager.file_exists(file.file_path)
+        print(f"[DELETE_FILE] File exists check: {file_exists} for path: {file.file_path}")
+        
+        if not file_exists:
+            print(f"[DELETE_FILE] WARNING: File not found on storage, deleting DB record anyway")
+            # Delete from database anyway to clean up orphaned records
+            self.db.delete(file)
+            self.db.commit()
+            # Update bucket usage
+            if bucket.used_Storage:
+                bucket.used_Storage = max(bucket.used_Storage - file.file_size, 0)
+            self.db.commit()
+            return {"detail": f"File metadata deleted (file not found in storage)"}
 
         # Delete from disk
         success = self.storage_manager.delete_file(file_path=file.file_path)
+        print(f"[DELETE_FILE] Storage deletion result: {success}")
         if not success:
+            print(f"[DELETE_FILE] ERROR: Failed to delete file from storage")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="File could not be deleted from storage")
 
         # Delete from database
         self.db.delete(file)
         self.db.commit()
+        print(f"[DELETE_FILE] DB record deleted")
 
         # Update bucket usage
         if bucket.used_Storage:
             bucket.used_Storage = max(bucket.used_Storage - file.file_size, 0)
         self.db.commit()
+        print(f"[DELETE_FILE] Bucket storage updated")
 
         return {"detail": "File deleted successfully"}
 

@@ -93,11 +93,19 @@ const BucketDetail = () => {
     const handleDeleteFile = async (fileId) => {
         if (!window.confirm("Permanently delete this file?")) return;
         try {
-            await api.delete(`/api/files/${fileId}`);
+            console.log('Attempting to delete file with ID:', fileId);
+            console.log('Delete URL:', `/api/files/${fileId}`);
+            const response = await api.delete(`/api/files/${fileId}`);
+            console.log('Delete response:', response);
             toast.success("File deleted");
-            setFiles(files.filter(f => f.id !== fileId));
+            // Refetch to update storage details
+            fetchBucketDetails();
         } catch (error) {
-            toast.error("Failed to delete file");
+            console.error('Delete error full:', error);
+            console.error('Error response:', error.response);
+            console.error('Error status:', error.response?.status);
+            console.error('Error data:', error.response?.data);
+            toast.error(error.response?.data?.detail || "Failed to delete file");
         }
     };
 
