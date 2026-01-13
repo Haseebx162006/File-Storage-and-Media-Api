@@ -19,9 +19,12 @@ file_router = APIRouter(prefix="/api")
 # Upload file to a bucket
 # ----------------------------
 @file_router.post("/buckets/{bucket_id}/files", status_code=status.HTTP_201_CREATED)
-def upload_file(bucket_id: int, file: UploadFile = UploadFile(...),
-                user: User = Depends(get_current_user),
-                db: Session = Depends(get_db)):
+async def upload_file(
+    bucket_id: int,
+    file: UploadFile,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     return upload_file_Service(user=user, bucket_id=bucket_id, file=file, db=db)
 
 
