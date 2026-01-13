@@ -2,8 +2,9 @@ fastapi
 uvicorn
 sqlalchemy
 python-jose
-passlib
 python-multipart
 psycopg2-binary
 python-dotenv
 email-validator
+argon2-cffi
+passlib
