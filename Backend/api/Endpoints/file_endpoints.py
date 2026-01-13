@@ -76,7 +76,7 @@ async def upload_file(
 def list_files(bucket_id: int,
                user: User = Depends(get_current_user),
                db: Session = Depends(get_db)):
-    from Services.File_Services import list_files_service
+    from Services.Storage_services import list_files_service
     return list_files_service(user=user, bucket_id=bucket_id, db=db)
 
 
@@ -117,7 +117,7 @@ def download_file(file_id: int,
 def delete_file(file_id: int,
                 user: User = Depends(get_current_user),
                 db: Session = Depends(get_db)):
-    from Services.File_Services import delete_file_service
+    from Services.Storage_services import delete_file_service
     delete_file_service(user=user, file_id=file_id, db=db)
     return {"detail": "File deleted successfully"}
 
@@ -129,5 +129,5 @@ def delete_file(file_id: int,
 def move_file(file_id: int, target_bucket_id: int,
               user: User = Depends(get_current_user),
               db: Session = Depends(get_db)):
-    from Services.File_Services import move_file_service
+    from Services.Storage_services import move_file_service
     return move_file_service(user=user, file_id=file_id, target_bucket_id=target_bucket_id, db=db)
