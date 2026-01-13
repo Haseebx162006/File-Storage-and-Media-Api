@@ -53,6 +53,18 @@ const BucketDetail = () => {
         const selectedFiles = Array.from(e.target.files);
         if (selectedFiles.length === 0) return;
 
+        // Validate file sizes (Vercel limit: 4.5MB, we use 4MB to be safe)
+        const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+        const oversizedFiles = selectedFiles.filter(f => f.size > MAX_FILE_SIZE);
+
+        if (oversizedFiles.length > 0) {
+            toast.error(
+                `File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Max size: 4MB per file.`
+            );
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
         setUploading(true);
         const toastId = toast.loading('Uploading files...');
 
@@ -68,7 +80,10 @@ const BucketDetail = () => {
             fetchBucketDetails();
         } catch (error) {
             console.error(error);
-            toast.error('Upload failed', { id: toastId });
+            const errorMsg = error.response?.status === 413
+                ? 'File too large. Max size: 4MB'
+                : 'Upload failed';
+            toast.error(errorMsg, { id: toastId });
         } finally {
             setUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -78,7 +93,7 @@ const BucketDetail = () => {
     const handleDeleteFile = async (fileId) => {
         if (!window.confirm("Permanently delete this file?")) return;
         try {
-            await api.delete(`/files/${fileId}`);
+            await api.delete(`/api/files/${fileId}`);
             toast.success("File deleted");
             setFiles(files.filter(f => f.id !== fileId));
         } catch (error) {
@@ -91,7 +106,7 @@ const BucketDetail = () => {
         if (!targetBucketId) return;
 
         try {
-            await api.patch(`/files/${fileId}/move/${targetBucketId}`);
+            await api.patch(`/api/files/${fileId}/move/${targetBucketId}`);
             toast.success('File moved');
             fetchBucketDetails();
         } catch (error) {
@@ -102,7 +117,7 @@ const BucketDetail = () => {
 
     const handleDownloadFile = async (fileId, fileName) => {
         try {
-            const response = await api.get(`/files/${fileId}/download`, {
+            const response = await api.get(`/api/files/${fileId}/download`, {
                 responseType: 'blob'
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
