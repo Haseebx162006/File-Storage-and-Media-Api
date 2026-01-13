@@ -73,16 +73,16 @@ const BucketDetail = () => {
                 const formData = new FormData();
                 formData.append('file', file);
                 await api.post(`/api/buckets/${bucketId}/files`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    maxBodyLength: Infinity,
+                    maxContentLength: Infinity
                 });
             }
             toast.success('Files uploaded', { id: toastId });
             fetchBucketDetails();
         } catch (error) {
-            console.error(error);
-            const errorMsg = error.response?.status === 413
-                ? 'File too large. Max size: 4MB'
-                : 'Upload failed';
+            console.error('Upload error:', error);
+            const errorMsg = error.response?.data?.detail || error.response?.statusText || 'Upload failed';
             toast.error(errorMsg, { id: toastId });
         } finally {
             setUploading(false);
