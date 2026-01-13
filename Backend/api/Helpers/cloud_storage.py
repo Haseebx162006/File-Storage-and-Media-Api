@@ -52,13 +52,11 @@ class CloudStorageManager:
                 )
                 response.raise_for_status()
                 result = response.json()
-                file_url = result.get("url", "")
-                file_path = blob_path
+                file_url = result.get("url", f"https://blob.vercel-storage.com/{blob_path}")
+                file_path = file_url  # Store the full URL
             except Exception as e:
                 print(f"Blob upload failed: {e}")
-                # Fallback to local if cloud fails
-                self.is_production = False
-                return self.save_file(file_name, content, bucket_id, file_content_type)
+                raise
         
         if not self.is_production:
             # Save locally for development
@@ -97,13 +95,13 @@ class CloudStorageManager:
         Read file from cloud or local storage
         """
         if self.is_production:
-            # For Vercel Blob, file_path might be a URL or blob path
+            # For Vercel Blob, file_path should be a URL
             if file_path.startswith("http"):
                 response = requests.get(file_path)
                 response.raise_for_status()
                 return response.content
             else:
-                # Construct URL from blob path
+                # If it's just a path, construct the full URL
                 url = f"https://blob.vercel-storage.com/{file_path}"
                 response = requests.get(url, headers={"Authorization": f"Bearer {self.blob_token}"})
                 response.raise_for_status()
@@ -121,8 +119,15 @@ class CloudStorageManager:
         """
         if self.is_production:
             try:
+                # Extract blob path from URL if needed
+                if file_path.startswith("http"):
+                    # Parse URL to get the path
+                    blob_path = file_path.replace("https://blob.vercel-storage.com/", "")
+                else:
+                    blob_path = file_path
+                
                 response = requests.delete(
-                    f"https://blob.vercel-storage.com/{file_path}",
+                    f"https://blob.vercel-storage.com/{blob_path}",
                     headers={"Authorization": f"Bearer {self.blob_token}"}
                 )
                 return response.status_code in [200, 204]
@@ -145,8 +150,14 @@ class CloudStorageManager:
         """
         if self.is_production:
             try:
+                # Extract blob path from URL if needed
+                if file_path.startswith("http"):
+                    blob_path = file_path.replace("https://blob.vercel-storage.com/", "")
+                else:
+                    blob_path = file_path
+                
                 response = requests.head(
-                    f"https://blob.vercel-storage.com/{file_path}",
+                    f"https://blob.vercel-storage.com/{blob_path}",
                     headers={"Authorization": f"Bearer {self.blob_token}"}
                 )
                 return response.status_code == 200
@@ -159,7 +170,7 @@ class CloudStorageManager:
         """
         Move file between buckets
         """
-        new_path = f"bucket_{new_bucket_id}/{filename}"
+        new_blob_path = f"bucket_{new_bucket_id}/{filename}"
         
         if self.is_production:
             # Read from old location
@@ -167,15 +178,18 @@ class CloudStorageManager:
             
             # Upload to new location
             response = requests.put(
-                f"https://blob.vercel-storage.com/{new_path}",
+                f"https://blob.vercel-storage.com/{new_blob_path}",
                 headers={"Authorization": f"Bearer {self.blob_token}"},
                 data=content
             )
+            response.raise_for_status()
+            result = response.json()
+            new_file_url = result.get("url", f"https://blob.vercel-storage.com/{new_blob_path}")
             
             # Delete old file
             self.delete_file(old_path)
             
-            return new_path
+            return new_file_url
         else:
             # Local file move
             import shutil
