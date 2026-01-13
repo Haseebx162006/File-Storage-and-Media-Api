@@ -22,4 +22,4 @@ class File_Response_Schema(BaseModel):
     media_type: Optional[str] = None
 
     class Config:
-        form_attributes = True
+        from_attributes = True

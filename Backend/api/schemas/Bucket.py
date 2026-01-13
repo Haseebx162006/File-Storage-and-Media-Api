@@ -19,7 +19,7 @@ class Bucket_Response_schema(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode=True
+        from_attributes = True
         
 class Bucket_update_Schema(BaseModel):
     name: Optional[str] = None

@@ -12,7 +12,7 @@ class Read_User_Schema(BaseModel):
     name:str
     
     class Config:
-        form_attributes=True
+        from_attributes = True
     
 class Update_User_Schama():
     email:EmailStr
