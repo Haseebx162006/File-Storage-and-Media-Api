@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="File Storage API")
 
-# ✅ CORS MUST be immediately after app creation
+# 🔥 CORS — MUST be first thing after app creation
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -19,16 +19,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ⬇ imports AFTER middleware
-from Endpoints.file_endpoints import file_router
+# 🔥 Explicit OPTIONS handler (fixes Vercel preflight bug)
+@app.options("/{path:path}")
+async def preflight_handler(path: str):
+    return {}
+
+# ⬇ Import routers AFTER CORS
 from Endpoints.auth_endpoints import auth_endpoints
 from Endpoints.bucket_endpoints import bucket_router
+from Endpoints.file_endpoints import file_router
 
-# Include routers
 app.include_router(auth_endpoints)
 app.include_router(bucket_router)
 app.include_router(file_router)
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to the file storage API"}
+def root():
+    return {"status": "API running"}
