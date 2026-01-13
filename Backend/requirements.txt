@@ -8,5 +8,4 @@ python-dotenv
 email-validator
 argon2-cffi
 passlib
-vercel-blob
 requests

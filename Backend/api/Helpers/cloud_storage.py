@@ -4,10 +4,11 @@ from pathlib import Path
 import hashlib
 import uuid
 from datetime import datetime
+import requests
 
 class CloudStorageManager:
     """
-    Cloud storage manager using Vercel Blob.
+    Cloud storage manager using Vercel Blob REST API.
     Falls back to local storage for development.
     """
     
@@ -31,30 +32,35 @@ class CloudStorageManager:
         Save file to cloud storage (production) or local (development)
         """
         file_id = str(uuid.uuid4())
-        extension = file_name.split(".")[-1].lower()
+        extension = file_name.split(".")[-1].lower() if "." in file_name else "bin"
         stored_filename = f"{file_id}.{extension}"
         
         # Generate blob path
         blob_path = f"bucket_{bucket_id}/{stored_filename}"
         
         if self.is_production:
-            # Upload to Vercel Blob
-            from vercel_blob import put
-            
-            # Correct API: put(path, file_content, options={})
-            result = put(
-                blob_path,
-                content,
-                {
-                    "access": "public",
-                    "contentType": file_content_type,
-                    "addRandomSuffix": False
-                }
-            )
-            
-            file_url = result['url']
-            file_path = blob_path
-        else:
+            # Upload to Vercel Blob via REST API
+            try:
+                response = requests.put(
+                    f"https://blob.vercel-storage.com/{blob_path}",
+                    headers={
+                        "Authorization": f"Bearer {self.blob_token}",
+                        "Content-Type": file_content_type,
+                        "x-vercel-blob-add-random-suffix": "0"
+                    },
+                    data=content
+                )
+                response.raise_for_status()
+                result = response.json()
+                file_url = result.get("url", "")
+                file_path = blob_path
+            except Exception as e:
+                print(f"Blob upload failed: {e}")
+                # Fallback to local if cloud fails
+                self.is_production = False
+                return self.save_file(file_name, content, bucket_id, file_content_type)
+        
+        if not self.is_production:
             # Save locally for development
             bucket_dir = self.local_storage_path / f"bucket_{bucket_id}"
             bucket_dir.mkdir(parents=True, exist_ok=True)
@@ -91,11 +97,17 @@ class CloudStorageManager:
         Read file from cloud or local storage
         """
         if self.is_production:
-            # For Vercel Blob, we need to fetch from the URL
-            import requests
-            response = requests.get(file_path)
-            response.raise_for_status()
-            return response.content
+            # For Vercel Blob, file_path might be a URL or blob path
+            if file_path.startswith("http"):
+                response = requests.get(file_path)
+                response.raise_for_status()
+                return response.content
+            else:
+                # Construct URL from blob path
+                url = f"https://blob.vercel-storage.com/{file_path}"
+                response = requests.get(url, headers={"Authorization": f"Bearer {self.blob_token}"})
+                response.raise_for_status()
+                return response.content
         else:
             # Read from local storage
             path = Path(file_path)
@@ -109,9 +121,11 @@ class CloudStorageManager:
         """
         if self.is_production:
             try:
-                from vercel_blob import delete
-                delete(file_path)
-                return True
+                response = requests.delete(
+                    f"https://blob.vercel-storage.com/{file_path}",
+                    headers={"Authorization": f"Bearer {self.blob_token}"}
+                )
+                return response.status_code in [200, 204]
             except Exception as e:
                 print(f"Error deleting from Blob: {e}")
                 return False
@@ -131,9 +145,11 @@ class CloudStorageManager:
         """
         if self.is_production:
             try:
-                from vercel_blob import head
-                head(file_path)
-                return True
+                response = requests.head(
+                    f"https://blob.vercel-storage.com/{file_path}",
+                    headers={"Authorization": f"Bearer {self.blob_token}"}
+                )
+                return response.status_code == 200
             except:
                 return False
         else:
@@ -146,16 +162,18 @@ class CloudStorageManager:
         new_path = f"bucket_{new_bucket_id}/{filename}"
         
         if self.is_production:
-            from vercel_blob import put, delete
-            
             # Read from old location
             content = self.read_file(old_path)
             
             # Upload to new location
-            result = put(new_path, content, {"access": "public", "addRandomSuffix": False})
+            response = requests.put(
+                f"https://blob.vercel-storage.com/{new_path}",
+                headers={"Authorization": f"Bearer {self.blob_token}"},
+                data=content
+            )
             
             # Delete old file
-            delete(old_path)
+            self.delete_file(old_path)
             
             return new_path
         else:
