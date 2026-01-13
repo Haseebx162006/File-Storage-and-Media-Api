@@ -30,7 +30,7 @@ from Endpoints.bucket_endpoints import bucket_router
 from Endpoints.file_endpoints import file_router
 
 app.include_router(auth_endpoints)
-app.include_router(bucket_router)
+app.include_router(bucket_router, prefix="/api")
 app.include_router(file_router)
 
 @app.get("/")

@@ -34,7 +34,7 @@ function App() {
                   <Routes>
                     <Route element={<Layout />}>
                       <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/buckets/:bucketId" element={<BucketDetail />} />
+                      <Route path="/api/buckets/:bucketId" element={<BucketDetail />} />
                       {/* Redirect unknown protected routes to dashboard */}
                       <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Route>

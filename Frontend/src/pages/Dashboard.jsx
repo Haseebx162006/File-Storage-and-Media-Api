@@ -15,7 +15,7 @@ const Dashboard = () => {
 
     const fetchBuckets = async () => {
         try {
-            const response = await api.get('/buckets');
+            const response = await api.get('/api/buckets');
             setBuckets(response.data);
         } catch (error) {
             console.error(error);
@@ -35,7 +35,7 @@ const Dashboard = () => {
         if (!window.confirm('Are you sure you want to delete this bucket?')) return;
 
         try {
-            await api.delete(`/buckets/${id}`);
+            await api.delete(`/api/buckets/${id}`);
             toast.success('Bucket deleted');
             setBuckets(buckets.filter(b => b.id !== id));
         } catch (error) {
@@ -83,7 +83,7 @@ const Dashboard = () => {
             ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {buckets.map((bucket) => (
-                        <Link key={bucket.id} to={`/buckets/${bucket.id}`} className="group block focus:outline-none">
+                        <Link key={bucket.id} to={`/api/buckets/${bucket.id}`} className="group block focus:outline-none">
                             <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-1 hover:border-black/20 duration-300">
                                 <CardContent className="p-6">
                                     <div className="flex items-start justify-between">

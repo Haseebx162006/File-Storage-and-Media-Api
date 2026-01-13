@@ -30,9 +30,9 @@ const BucketDetail = () => {
 
     const fetchBucketDetails = async () => {
         try {
-            const bucketRes = await api.get(`/buckets/${bucketId}`);
+            const bucketRes = await api.get(`/api/buckets/${bucketId}`);
             setBucket(bucketRes.data);
-            const filesRes = await api.get(`/buckets/${bucketId}/files`);
+            const filesRes = await api.get(`/api/buckets/${bucketId}/files`);
             setFiles(filesRes.data);
         } catch (error) {
             console.error(error);
@@ -60,7 +60,7 @@ const BucketDetail = () => {
             for (const file of selectedFiles) {
                 const formData = new FormData();
                 formData.append('file', file);
-                await api.post(`/buckets/${bucketId}/files`, formData, {
+                await api.post(`/api/buckets/${bucketId}/files`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
             }

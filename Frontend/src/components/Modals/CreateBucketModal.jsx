@@ -16,7 +16,7 @@ export default function CreateBucketModal({ isOpen, onClose, onBucketCreated }) 
         setLoading(true);
         try {
             const payload = { name, is_public: false, storage_limit: 524288000 }; // 500MB default
-            await api.post('/buckets', payload);
+            await api.post('/api/buckets', payload);
             toast.success('Bucket created successfully');
             setName('');
             onBucketCreated();
