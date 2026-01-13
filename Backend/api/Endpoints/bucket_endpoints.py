@@ -7,7 +7,8 @@ from Auth.token import get_current_user
 from model.User import User
 from Services.bucket_service import BucketService
 bucket_router=APIRouter(
-    prefix="/api/buckets"
+    prefix="/buckets",
+    tags=["Buckets"]
 )
 
 # Create
